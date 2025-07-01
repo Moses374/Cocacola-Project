@@ -1,3 +1,5 @@
+package model;
+
 import java.io.*;
 import java.net.Socket;
 
@@ -19,7 +21,6 @@ public class OrderHandler implements Runnable {
 
             if (product != null) {
                 if (product.getStock() >= order.getQuantity()) {
-                    // Process order
                     product.setStock(product.getStock() - order.getQuantity());
 
                     String response = "Order from " + order.getBranchName() + " processed for "

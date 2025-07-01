@@ -1,3 +1,6 @@
+package model;
+
+
 import java.io.Serializable;
 
 public class Order implements Serializable {
@@ -13,5 +16,19 @@ public class Order implements Serializable {
         this.branchName = branchName;
     }
 
+    public String getCustomerName() {
+        return customerName;
+    }
 
+    public String getProductName() {
+        return productName;
+    }
+
+    public int getQuantity() {
+        return quantity;
+    }
+
+    public String getBranchName() {
+        return branchName;
+    }
 }

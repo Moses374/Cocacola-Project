@@ -1,3 +1,4 @@
+package model;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -22,7 +23,7 @@ public class HeadquartersServer {
         }
     }
 
-    private static void loadStock() {
+    public static void loadStock() {
         stock.put("Coca-Cola Classic", new Product("Coca-Cola Classic", 50.0, 100));
         stock.put("Sprite", new Product("Sprite", 45.0, 80));
         stock.put("Fanta", new Product("Fanta", 45.0, 60));

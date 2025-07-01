@@ -1,4 +1,3 @@
-// CartController.java
 package com.example.demo1;
 
 import javafx.application.Platform;

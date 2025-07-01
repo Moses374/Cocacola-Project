@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.demo1.CartController">
+    <children>
+        <VBox spacing="20.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <children>
+                <!-- Header -->
+                <HBox alignment="CENTER_LEFT" spacing="20.0">
+                    <children>
+                        <Button fx:id="backButton" mnemonicParsing="false" onAction="#goBack" text="← Back" />
+                        <Label text="Shopping Cart" textFill="#2c3e50">
+                            <font>
+                                <Font name="System Bold" size="24.0" />
+                            </font>
+                        </Label>
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Button fx:id="clearCartButton" mnemonicParsing="false" onAction="#clearCart"
+                                style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 5;"
+                                text="Clear Cart" />
+                    </children>
+                    <padding>
+                        <Insets bottom="10.0" left="20.0" right="20.0" top="20.0" />
+                    </padding>
+                </HBox>
+
+                <!-- Main Content Area with Scroll -->
+                <StackPane VBox.vgrow="ALWAYS">
+                    <children>
+                        <!-- Empty Cart Message -->
+                        <VBox fx:id="emptyCartMessage" alignment="CENTER" spacing="20.0" visible="false">
+                            <children>
+                                <Label text="🛒" textFill="#bdc3c7">
+                                    <font>
+                                        <Font size="48.0" />
+                                    </font>
+                                </Label>
+                                <Label text="Your cart is empty" textFill="#7f8c8d">
+                                    <font>
+                                        <Font size="18.0" />
+                                    </font>
+                                </Label>
+                                <Label text="Add items from the drinks menu to get started!" textFill="#95a5a6">
+                                    <font>
+                                        <Font size="14.0" />
+                                    </font>
+                                </Label>
+                            </children>
+                            <padding>
+                                <Insets bottom="50.0" top="50.0" />
+                            </padding>
+                        </VBox>
+
+                        <!-- Cart Items with Scroll -->
+                        <ScrollPane fx:id="cartScrollPane" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED">
+                            <content>
+                                <VBox fx:id="cartItemsContainer" spacing="10.0">
+                                    <padding>
+                                        <Insets bottom="10.0" left="20.0" right="20.0" top="10.0" />
+                                    </padding>
+                                </VBox>
+                            </content>
+                        </ScrollPane>
+                    </children>
+                </StackPane>
+
+                <!-- Fixed Cart Summary at Bottom -->
+                <VBox fx:id="cartSummary" spacing="15.0" style="-fx-background-color: #f8f9fa; -fx-background-radius: 10; -fx-border-color: #e9ecef; -fx-border-radius: 10;">
+                    <children>
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                            <children>
+                                <Label text="Total Items:" textFill="#495057">
+                                    <font>
+                                        <Font size="16.0" />
+                                    </font>
+                                </Label>
+                                <Region HBox.hgrow="ALWAYS" />
+                                <Label fx:id="totalItemsLabel" text="0" textFill="#495057">
+                                    <font>
+                                        <Font name="System Bold" size="16.0" />
+                                    </font>
+                                </Label>
+                            </children>
+                        </HBox>
+
+                        <Separator />
+
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                            <children>
+                                <Label text="Total Amount:" textFill="#2c3e50">
+                                    <font>
+                                        <Font name="System Bold" size="18.0" />
+                                    </font>
+                                </Label>
+                                <Region HBox.hgrow="ALWAYS" />
+                                <Label fx:id="totalAmountLabel" text="KSh 0.00" textFill="#27ae60">
+                                    <font>
+                                        <Font name="System Bold" size="20.0" />
+                                    </font>
+                                </Label>
+                            </children>
+                        </HBox>
+
+                        <Button fx:id="checkoutButton" maxWidth="1.7976931348623157E308" mnemonicParsing="false"
+                                onAction="#checkout" prefHeight="50.0"
+                                style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-background-radius: 8; -fx-font-size: 16px; -fx-font-weight: bold;"
+                                text="Proceed to Checkout" />
+                    </children>
+                    <padding>
+                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+                    </padding>
+                </VBox>
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>

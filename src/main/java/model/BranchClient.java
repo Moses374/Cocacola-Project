@@ -8,7 +8,7 @@ public class BranchClient {
              ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
              ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
 
-            Order order = new Order("John Doe", "Coca-Cola Classic", 10, "Mombasa");
+            NetworkOrder order = new NetworkOrder("John Doe", "Coca-Cola Classic", 10, "Mombasa");
             out.writeObject(order);
             out.flush();
 

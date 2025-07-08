@@ -15,7 +15,7 @@ public class OrderHandler implements Runnable {
         try (ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream())) {
 
-            Order order = (Order) in.readObject();
+            NetworkOrder order = (NetworkOrder) in.readObject();
 
             Product product = HeadquartersServer.stock.get(order.getProductName());
 

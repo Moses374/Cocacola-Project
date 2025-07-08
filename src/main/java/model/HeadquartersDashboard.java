@@ -7,7 +7,14 @@ import java.awt.*;
 import java.io.FileWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import com.example.dao.InventoryDAO;
+import com.example.dao.BranchDAO;
+import com.example.dao.DrinkDAO;
+import com.example.dao.OrderDAO;
+import com.example.dao.CustomerDAO;
+import com.example.dao.OrderItemDAO;
 
 public class HeadquartersDashboard extends JFrame {
     // Theme colors - flat design
@@ -23,6 +30,14 @@ public class HeadquartersDashboard extends JFrame {
     private JPanel chartPanel;
     private JTextField nameField, priceField, stockField;
     private JComboBox<String> productBox;
+    private JButton refreshButton;
+    
+    private InventoryDAO inventoryDAO = new InventoryDAO();
+    private BranchDAO branchDAO = new BranchDAO();
+    private DrinkDAO drinkDAO = new DrinkDAO();
+    private OrderDAO orderDAO = new OrderDAO();
+    private CustomerDAO customerDAO = new CustomerDAO();
+    private OrderItemDAO orderItemDAO = new OrderItemDAO();
     
     public HeadquartersDashboard() {
         setTitle("Coca-Cola HQ");
@@ -39,13 +54,20 @@ public class HeadquartersDashboard extends JFrame {
         mainPanel.add(createHeader(), BorderLayout.NORTH);
         mainPanel.add(createTabbedPane(), BorderLayout.CENTER);
         
+        // Add refresh button
+        refreshButton = new JButton("Refresh");
+        refreshButton.addActionListener(e -> refreshDashboard());
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        topPanel.setOpaque(false);
+        topPanel.add(refreshButton);
+        mainPanel.add(topPanel, BorderLayout.SOUTH);
+        
         // Set as content pane
         setContentPane(mainPanel);
         setLocationRelativeTo(null);
         
-        // Load data from server
-        loadProductData();
-        updateLowStockAlerts();
+        // Initial data load
+        refreshDashboard();
     }
     
     private JPanel createHeader() {
@@ -208,15 +230,10 @@ public class HeadquartersDashboard extends JFrame {
         addButton.addActionListener(e -> addProduct());
         updateButton.addActionListener(e -> updateProduct());
         
-        productBox.addActionListener(e -> {
-            String selected = (String) productBox.getSelectedItem();
-            if (selected != null && HeadquartersServer.stock.containsKey(selected)) {
-                Product p = HeadquartersServer.stock.get(selected);
-                nameField.setText(p.getName());
-                priceField.setText(String.valueOf(p.getPrice()));
-                stockField.setText(String.valueOf(p.getStock()));
-            }
-        });
+        try {
+            productBox.removeAllItems();
+            for (Drinks d : drinkDAO.getAllDrinks()) productBox.addItem(d.getName());
+        } catch (Exception e) { e.printStackTrace(); }
         
         panel.add(formPanel, BorderLayout.SOUTH);
         return panel;
@@ -224,97 +241,133 @@ public class HeadquartersDashboard extends JFrame {
     
     // LOW STOCK ALERTS PANEL
     private JPanel createAlertsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBackground(backgroundColor);
-        
-        // Title
-        JLabel alertsTitle = new JLabel("Low Stock Alerts", SwingConstants.CENTER);
-        alertsTitle.setFont(new Font("SansSerif", Font.BOLD, 20));
-        alertsTitle.setForeground(primaryColor);
-        panel.add(alertsTitle, BorderLayout.NORTH);
-        
-        // Alerts container (will be populated dynamically)
-        alertsPanel = new JPanel();
-        alertsPanel.setLayout(new BoxLayout(alertsPanel, BoxLayout.Y_AXIS));
-        alertsPanel.setBackground(backgroundColor);
-        JScrollPane scrollPane = new JScrollPane(alertsPanel);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        panel.add(scrollPane, BorderLayout.CENTER);
-        
-        // Refresh button
-        JButton refreshButton = createStyledButton("Refresh Alerts", primaryColor);
-        refreshButton.addActionListener(e -> updateLowStockAlerts());
-        
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        buttonPanel.setBackground(backgroundColor);
-        buttonPanel.add(refreshButton);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
-        
-        return panel;
+        alertsPanel = new JPanel(new BorderLayout());
+        JTextArea alertsArea = new JTextArea();
+        alertsArea.setEditable(false);
+        try {
+            List<Inventory> lowStock = inventoryDAO.getAllInventory().stream()
+                .filter(i -> i.getQuantity() < i.getThreshold())
+                .toList();
+            StringBuilder sb = new StringBuilder();
+            for (Inventory inv : lowStock) {
+                Branch branch = branchDAO.getAllBranches().stream().filter(b -> b.getBranchId() == inv.getBranchId()).findFirst().orElse(null);
+                Drinks drink = drinkDAO.getAllDrinks().stream().filter(d -> d.getDrinkId() == inv.getDrinkId()).findFirst().orElse(null);
+                sb.append("LOW STOCK: ")
+                  .append(drink != null ? drink.getName() : "Drink#"+inv.getDrinkId())
+                  .append(" at ")
+                  .append(branch != null ? branch.getBranchName() : "Branch#"+inv.getBranchId())
+                  .append(" (Qty: ").append(inv.getQuantity()).append(", Threshold: ").append(inv.getThreshold()).append(")\n");
+            }
+            alertsArea.setText(sb.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+            alertsArea.setText("Error loading alerts: " + e.getMessage());
+        }
+        alertsPanel.add(new JScrollPane(alertsArea), BorderLayout.CENTER);
+        return alertsPanel;
     }
     
     // SALES REPORTS PANEL
     private JPanel createReportsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBackground(backgroundColor);
-        
-        // Simple report view
-        JTextArea reportArea = new JTextArea();
-        reportArea.setFont(new Font("Monospaced", Font.PLAIN, 14));
-        reportArea.setEditable(false);
-        reportArea.setBorder(new EmptyBorder(10, 10, 10, 10));
-        
-        // Generate the report content using server data
-        StringBuilder report = new StringBuilder();
-        report.append("COCA-COLA SALES REPORT\n");
-        report.append("====================\n\n");
-        report.append(String.format("%-20s %-10s %-10s %-10s\n", 
-            "PRODUCT", "PRICE", "STOCK", "VALUE"));
-        report.append("\n");
-        
-        double totalValue = 0;
-        for (Map.Entry<String, Product> entry : HeadquartersServer.stock.entrySet()) {
-            Product p = entry.getValue();
-            double value = p.getPrice() * p.getStock();
-            totalValue += value;
-            
-            report.append(String.format("%-20s %.2f      %-10d %.2f\n",
-                p.getName(), p.getPrice(), p.getStock(), value));
+        JPanel panel = new JPanel(new GridLayout(4, 1, 10, 10));
+        JTextArea customersArea = new JTextArea();
+        JTextArea ordersArea = new JTextArea();
+        JTextArea salesArea = new JTextArea();
+        JTextArea transferArea = new JTextArea();
+        customersArea.setEditable(false);
+        ordersArea.setEditable(false);
+        salesArea.setEditable(false);
+        transferArea.setEditable(false);
+        try {
+            // Customers who made orders
+            StringBuilder sb = new StringBuilder("Customers who made orders:\n");
+            for (Order order : orderDAO.getAllOrders()) {
+                Customer c = customerDAO.getCustomerById(order.getCustomerId());
+                if (c != null) sb.append(c.getName()).append(" (Contact: ").append(c.getContact()).append(")\n");
+            }
+            customersArea.setText(sb.toString());
+            // Orders per branch
+            sb = new StringBuilder("Orders per branch:\n");
+            for (Branch branch : branchDAO.getAllBranches()) {
+                long count = orderDAO.getAllOrders().stream().filter(o -> o.getBranchId() == branch.getBranchId()).count();
+                sb.append(branch.getBranchName()).append(": ").append(count).append("\n");
+            }
+            ordersArea.setText(sb.toString());
+            // Sales per branch
+            sb = new StringBuilder("Sales per branch:\n");
+            for (Branch branch : branchDAO.getAllBranches()) {
+                double total = 0;
+                for (Order order : orderDAO.getAllOrders()) {
+                    if (order.getBranchId() == branch.getBranchId()) {
+                        for (OrderItem item : orderItemDAO.getAllOrderItems()) {
+                            if (item.getOrderId() == order.getOrderId()) {
+                                total += item.getPrice() * item.getQuantity();
+                            }
+                        }
+                    }
+                }
+                sb.append(branch.getBranchName()).append(": KSh ").append(String.format("%.2f", total)).append("\n");
+            }
+            salesArea.setText(sb.toString());
+        } catch (Exception e) {
+            customersArea.setText("Error: " + e.getMessage());
+            ordersArea.setText("Error: " + e.getMessage());
+            salesArea.setText("Error: " + e.getMessage());
         }
-        
-        report.append("\n====================\n");
-        report.append(String.format("Total Inventory Value: KES %.2f", totalValue));
-        
-        reportArea.setText(report.toString());
-        
-        JScrollPane scrollPane = new JScrollPane(reportArea);
-        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230)));
-        panel.add(scrollPane, BorderLayout.CENTER);
-        
-        // Export button
-        JButton exportButton = createStyledButton("Export Report", primaryColor);
-        exportButton.addActionListener(e -> {
+        // Stock transfer UI
+        JPanel transferPanel = new JPanel(new FlowLayout());
+        JComboBox<Drinks> drinkBox = new JComboBox<>();
+        JComboBox<Branch> branchBox = new JComboBox<>();
+        JTextField qtyField = new JTextField(5);
+        JButton transferBtn = new JButton("Transfer Stock from HQ");
+        try {
+            drinkBox.removeAllItems();
+            for (Drinks d : drinkDAO.getAllDrinks()) drinkBox.addItem(d);
+            branchBox.removeAllItems();
+            for (Branch b : branchDAO.getAllBranches()) if (!b.getBranchName().equalsIgnoreCase("NAIROBI HQ")) branchBox.addItem(b);
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error loading data: " + e.getMessage());
+        }
+        transferPanel.add(new JLabel("Drink:"));
+        transferPanel.add(drinkBox);
+        transferPanel.add(new JLabel("To Branch:"));
+        transferPanel.add(branchBox);
+        transferPanel.add(new JLabel("Qty:"));
+        transferPanel.add(qtyField);
+        transferPanel.add(transferBtn);
+        transferBtn.addActionListener(e -> {
+            Drinks drink = (Drinks) drinkBox.getSelectedItem();
+            Branch dest = (Branch) branchBox.getSelectedItem();
+            int qty;
+            try { qty = Integer.parseInt(qtyField.getText()); } catch (Exception ex) { JOptionPane.showMessageDialog(panel, "Invalid quantity"); return; }
             try {
-                FileWriter writer = new FileWriter("coca_cola_report.txt");
-                writer.write(reportArea.getText());
-                writer.close();
-                JOptionPane.showMessageDialog(this, 
-                    "Report saved to coca_cola_report.txt",
-                    "Export Success", 
-                    JOptionPane.INFORMATION_MESSAGE);
+                // Decrement HQ inventory
+                Branch hq = branchDAO.getAllBranches().stream().filter(b -> b.getBranchName().equalsIgnoreCase("NAIROBI HQ")).findFirst().orElse(null);
+                if (hq == null) throw new Exception("HQ not found");
+                Inventory hqInv = inventoryDAO.getAllInventory().stream().filter(i -> i.getDrinkId() == drink.getDrinkId() && i.getBranchId() == hq.getBranchId()).findFirst().orElse(null);
+                if (hqInv == null || hqInv.getQuantity() < qty) throw new Exception("Insufficient HQ stock");
+                hqInv.setQuantity(hqInv.getQuantity() - qty);
+                inventoryDAO.updateInventory(hqInv);
+                // Increment branch inventory
+                Inventory destInv = inventoryDAO.getAllInventory().stream().filter(i -> i.getDrinkId() == drink.getDrinkId() && i.getBranchId() == dest.getBranchId()).findFirst().orElse(null);
+                if (destInv == null) {
+                    destInv = new Inventory(drink.getDrinkId(), dest.getBranchId(), qty, 10);
+                    inventoryDAO.addInventory(destInv);
+                } else {
+                    destInv.setQuantity(destInv.getQuantity() + qty);
+                    inventoryDAO.updateInventory(destInv);
+                }
+                JOptionPane.showMessageDialog(panel, "Stock transferred successfully!");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this,
-                    "Error saving report: " + ex.getMessage(),
-                    "Export Failed",
-                    JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(panel, "Error: " + ex.getMessage());
             }
         });
-        
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        buttonPanel.setBackground(backgroundColor);
-        buttonPanel.add(exportButton);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
-        
+        // Add all to panel
+        panel.add(new JScrollPane(customersArea));
+        panel.add(new JScrollPane(ordersArea));
+        panel.add(new JScrollPane(salesArea));
+        panel.add(transferPanel);
         return panel;
     }
     
@@ -360,98 +413,100 @@ public class HeadquartersDashboard extends JFrame {
     }
     
     private void loadProductData() {
-        // Clear existing data
-        DefaultTableModel model = (DefaultTableModel) stockTable.getModel();
-        model.setRowCount(0);
-        productBox.removeAllItems();
-        
-        // Load from server
-        for (Map.Entry<String, Product> entry : HeadquartersServer.stock.entrySet()) {
-            Product p = entry.getValue();
-            String status = p.getStock() < 20 ? "LOW STOCK" : "In Stock";
-            
-            model.addRow(new Object[]{
-                p.getName(),
-                p.getPrice(),
-                p.getStock(),
-                status
-            });
-            
-            productBox.addItem(p.getName());
-        }
+        try {
+            DefaultTableModel model = (DefaultTableModel) stockTable.getModel();
+            model.setRowCount(0);
+            productBox.removeAllItems();
+            // Use drinks for names/prices, inventory for stock
+            for (Drinks drink : drinkDAO.getAllDrinks()) {
+                // Find inventory for HQ (branchId=1)
+                Inventory inv = inventoryDAO.getAllInventory().stream()
+                    .filter(i -> i.getDrinkId() == drink.getDrinkId() && i.getBranchId() == 1)
+                    .findFirst().orElse(null);
+                int stock = inv != null ? inv.getQuantity() : 0;
+                String status = inv != null && stock < inv.getThreshold() ? "LOW STOCK" : "In Stock";
+                model.addRow(new Object[]{
+                    drink.getName(),
+                    drink.getUnitPrice(),
+                    stock,
+                    status
+                });
+                productBox.addItem(drink.getName());
+            }
+        } catch (Exception e) { e.printStackTrace(); }
     }
     
     private void updateLowStockAlerts() {
         // Clear existing alerts
         alertsPanel.removeAll();
-        
         boolean hasAlerts = false;
-        
-        // Check each product
-        for (Map.Entry<String, Product> entry : HeadquartersServer.stock.entrySet()) {
-            Product p = entry.getValue();
-            
-            if (p.getStock() < 20) {
-                hasAlerts = true;
-                
-                // Create alert card
-                JPanel alertCard = new JPanel(new BorderLayout(10, 10));
-                alertCard.setBackground(cardColor);
-                alertCard.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(0, 5, 0, 0, Color.RED),
-                    new EmptyBorder(15, 15, 15, 15)
-                ));
-                alertCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
-                
-                // Product info
-                JPanel infoPanel = new JPanel(new GridLayout(2, 1));
-                infoPanel.setOpaque(false);
-                
-                JLabel nameLabel = new JLabel(p.getName());
-                nameLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
-                
-                JLabel stockLabel = new JLabel("Only " + p.getStock() + " units remaining");
-                stockLabel.setForeground(Color.RED);
-                
-                infoPanel.add(nameLabel);
-                infoPanel.add(stockLabel);
-                alertCard.add(infoPanel, BorderLayout.CENTER);
-                
-                // Restock button
-                JButton restockButton = createStyledButton("Restock", primaryColor);
-                restockButton.addActionListener(e -> {
-                    String input = JOptionPane.showInputDialog(
-                        this, 
-                        "Enter quantity to add:",
-                        "Restock " + p.getName(),
-                        JOptionPane.QUESTION_MESSAGE
-                    );
+        try {
+            // Check each product
+            for (Inventory inv : inventoryDAO.getAllInventory()) {
+                Drinks drink = drinkDAO.getDrinkById(inv.getDrinkId());
+                if (inv.getQuantity() < inv.getThreshold()) {
+                    hasAlerts = true;
                     
-                    try {
-                        int qty = Integer.parseInt(input);
-                        if (qty > 0) {
-                            p.setStock(p.getStock() + qty);
+                    // Create alert card
+                    JPanel alertCard = new JPanel(new BorderLayout(10, 10));
+                    alertCard.setBackground(cardColor);
+                    alertCard.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 5, 0, 0, Color.RED),
+                        new EmptyBorder(15, 15, 15, 15)
+                    ));
+                    alertCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
+                    
+                    // Product info
+                    JPanel infoPanel = new JPanel(new GridLayout(2, 1));
+                    infoPanel.setOpaque(false);
+                    
+                    JLabel nameLabel = new JLabel(drink != null ? drink.getName() : ("Drink#" + inv.getDrinkId()));
+                    nameLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
+                    
+                    JLabel stockLabel = new JLabel("Only " + inv.getQuantity() + " units remaining");
+                    stockLabel.setForeground(Color.RED);
+                    
+                    infoPanel.add(nameLabel);
+                    infoPanel.add(stockLabel);
+                    alertCard.add(infoPanel, BorderLayout.CENTER);
+                    
+                    // Restock button
+                    JButton restockButton = createStyledButton("Restock", primaryColor);
+                    restockButton.addActionListener(e -> {
+                        String input = JOptionPane.showInputDialog(
+                            this, 
+                            "Enter quantity to add:",
+                            "Restock " + (drink != null ? drink.getName() : ("Drink#" + inv.getDrinkId())),
+                            JOptionPane.QUESTION_MESSAGE
+                        );
+                        
+                        try {
+                            int qty = Integer.parseInt(input);
+                            if (qty > 0) {
+                                inv.setQuantity(inv.getQuantity() + qty);
+                                inventoryDAO.updateInventory(inv);
+                                JOptionPane.showMessageDialog(this, 
+                                    "Added " + qty + " units to " + (drink != null ? drink.getName() : ("Drink#" + inv.getDrinkId())));
+                                updateLowStockAlerts();
+                                loadProductData();
+                                chartPanel.repaint();
+                            }
+                        } catch (Exception ex) {
                             JOptionPane.showMessageDialog(this, 
-                                "Added " + qty + " units to " + p.getName());
-                            updateLowStockAlerts();
-                            loadProductData();
-                            chartPanel.repaint();
+                                "Please enter a valid number", 
+                                "Error", 
+                                JOptionPane.ERROR_MESSAGE);
                         }
-                    } catch (Exception ex) {
-                        JOptionPane.showMessageDialog(this, 
-                            "Please enter a valid number", 
-                            "Error", 
-                            JOptionPane.ERROR_MESSAGE);
-                    }
-                });
-                
-                alertCard.add(restockButton, BorderLayout.EAST);
-                
-                // Add to panel with spacing
-                alertsPanel.add(alertCard);
-                alertsPanel.add(Box.createVerticalStrut(10));
+                    });
+                    
+                    alertCard.add(restockButton, BorderLayout.EAST);
+                    
+                    // Add to panel with spacing
+                    alertsPanel.add(alertCard);
+                    alertsPanel.add(Box.createVerticalStrut(10));
+                }
             }
-        }
+        } catch (Exception e) { e.printStackTrace(); }
         
         if (!hasAlerts) {
             // No alerts message
@@ -487,7 +542,10 @@ public class HeadquartersDashboard extends JFrame {
         int barSpace = 40;
         
         // Get product data from server
-        int productCount = HeadquartersServer.stock.size();
+        int productCount = 0;
+        try {
+            productCount = inventoryDAO.getAllInventory().size();
+        } catch (Exception e) { e.printStackTrace(); }
         if (productCount == 0) return;
         
         // Calculate bar width based on number of products
@@ -495,9 +553,11 @@ public class HeadquartersDashboard extends JFrame {
         
         // Find max stock for scaling
         int maxStock = 0;
-        for (Product p : HeadquartersServer.stock.values()) {
-            maxStock = Math.max(maxStock, p.getStock());
-        }
+        try {
+            for (Inventory inv : inventoryDAO.getAllInventory()) {
+                maxStock = Math.max(maxStock, inv.getQuantity());
+            }
+        } catch (Exception e) { e.printStackTrace(); }
         maxStock = Math.max(100, maxStock); // Minimum scale
         
         // Draw axes
@@ -532,36 +592,38 @@ public class HeadquartersDashboard extends JFrame {
         
         // Draw bars
         int x = padding + barSpace;
-        for (Map.Entry<String, Product> entry : HeadquartersServer.stock.entrySet()) {
-            Product p = entry.getValue();
-            int stock = p.getStock();
-            
-            // Calculate bar height (scaled)
-            int barHeight = (int)(((double)stock / maxStock) * chartHeight);
-            int barY = height - padding - barHeight;
-            
-            // Draw bar with drop shadow
-            g2.setColor(new Color(210, 210, 210));
-            g2.fillRect(x + 3, barY + 3, barWidth, barHeight);
-            
-            // Determine bar color - Red for low stock, otherwise Coca-Cola red
-            if (stock < 20) {
-                g2.setColor(new Color(255, 100, 100));
-            } else {
-                g2.setColor(primaryColor);
+        try {
+            for (Inventory inv : inventoryDAO.getAllInventory()) {
+                Drinks drink = drinkDAO.getDrinkById(inv.getDrinkId());
+                int stock = inv.getQuantity();
+                
+                // Calculate bar height (scaled)
+                int barHeight = (int)(((double)stock / maxStock) * chartHeight);
+                int barY = height - padding - barHeight;
+                
+                // Draw bar with drop shadow
+                g2.setColor(new Color(210, 210, 210));
+                g2.fillRect(x + 3, barY + 3, barWidth, barHeight);
+                
+                // Determine bar color - Red for low stock, otherwise Coca-Cola red
+                if (stock < 20) {
+                    g2.setColor(new Color(255, 100, 100));
+                } else {
+                    g2.setColor(primaryColor);
+                }
+                g2.fillRect(x, barY, barWidth, barHeight);
+                
+                // Draw value on top of bar
+                g2.setColor(accentColor);
+                g2.drawString(String.valueOf(stock), x + (barWidth/2) - 10, barY - 5);
+                
+                // Draw product name below x-axis
+                g2.drawString(drink != null ? drink.getName() : ("Drink#" + inv.getDrinkId()), x, height - padding + 20);
+                
+                // Move to next bar position
+                x += barWidth + barSpace;
             }
-            g2.fillRect(x, barY, barWidth, barHeight);
-            
-            // Draw value on top of bar
-            g2.setColor(accentColor);
-            g2.drawString(String.valueOf(stock), x + (barWidth/2) - 10, barY - 5);
-            
-            // Draw product name below x-axis
-            g2.drawString(p.getName(), x, height - padding + 20);
-            
-            // Move to next bar position
-            x += barWidth + barSpace;
-        }
+        } catch (Exception e) { e.printStackTrace(); }
     }
     
     private void addProduct() {
@@ -569,42 +631,36 @@ public class HeadquartersDashboard extends JFrame {
             String name = nameField.getText().trim();
             double price = Double.parseDouble(priceField.getText().trim());
             int stock = Integer.parseInt(stockField.getText().trim());
-            
             if (name.isEmpty()) {
                 JOptionPane.showMessageDialog(this, 
                     "Product name cannot be empty", 
                     "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            
-            if (HeadquartersServer.stock.containsKey(name)) {
-                JOptionPane.showMessageDialog(this,
-                    "Product already exists", 
-                    "Error", JOptionPane.ERROR_MESSAGE);
-                return;
+            // Add to drinks table
+            Drinks drink = new Drinks(name, "CocaCola", price); // Use a default brand or add a field for brand
+            drinkDAO.addDrink(drink);
+            // Get the inserted drink's ID
+            Drinks inserted = drinkDAO.getAllDrinks().stream().filter(d -> d.getName().equals(name)).findFirst().orElse(null);
+            if (inserted != null) {
+                // Add to inventory for HQ (branchId=1)
+                inventoryDAO.addInventory(new Inventory(inserted.getDrinkId(), 1, stock, 10));
             }
-            
-            // Add to stock
-            HeadquartersServer.stock.put(name, new Product(name, price, stock));
-            
             // Clear fields
             nameField.setText("");
             priceField.setText("");
             stockField.setText("");
-            
             // Update UI
             loadProductData();
             updateLowStockAlerts();
             chartPanel.repaint();
-            
             JOptionPane.showMessageDialog(this, 
                 "Product added successfully!");
-            
         } catch (NumberFormatException e) {
             JOptionPane.showMessageDialog(this,
                 "Please enter valid numbers for price and stock", 
                 "Error", JOptionPane.ERROR_MESSAGE);
-        }
+        } catch (Exception e) { e.printStackTrace(); }
     }
     
     private void updateProduct() {
@@ -615,46 +671,77 @@ public class HeadquartersDashboard extends JFrame {
                 "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        
         try {
             String name = nameField.getText().trim();
             double price = Double.parseDouble(priceField.getText().trim());
             int stock = Integer.parseInt(stockField.getText().trim());
-            
             if (name.isEmpty()) {
                 JOptionPane.showMessageDialog(this, 
                     "Product name cannot be empty", 
                     "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            
-            // Get product from server
-            Product product = HeadquartersServer.stock.get(selected);
-            
-            // Update values
-            product.setName(name);
-            product.setPrice(price);
-            product.setStock(stock);
-            
-            // If name changed, update hashmap key
-            if (!name.equals(selected)) {
-                HeadquartersServer.stock.remove(selected);
-                HeadquartersServer.stock.put(name, product);
+            // Find the drink by name
+            Drinks drink = drinkDAO.getAllDrinks().stream().filter(d -> d.getName().equals(selected)).findFirst().orElse(null);
+            if (drink == null) {
+                JOptionPane.showMessageDialog(this, 
+                    "Product not found", 
+                    "Error", JOptionPane.ERROR_MESSAGE);
+                return;
             }
-            
+            // Update drink info
+            drink.setName(name);
+            drink.setUnitPrice(price);
+            drinkDAO.updateDrink(drink);
+            // Update inventory for HQ (branchId=1)
+            Inventory inv = inventoryDAO.getAllInventory().stream()
+                .filter(i -> i.getDrinkId() == drink.getDrinkId() && i.getBranchId() == 1)
+                .findFirst().orElse(null);
+            if (inv != null) {
+                inv.setQuantity(stock);
+                inventoryDAO.updateInventory(inv);
+            }
             // Update UI
             loadProductData();
             updateLowStockAlerts();
             chartPanel.repaint();
-            
             JOptionPane.showMessageDialog(this, 
                 "Product updated successfully!");
-            
         } catch (NumberFormatException e) {
             JOptionPane.showMessageDialog(this,
                 "Please enter valid numbers for price and stock", 
                 "Error", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+    
+    // Refresh all dashboard data
+    private void refreshDashboard() {
+        // Refresh alerts
+        if (alertsPanel != null) {
+            alertsPanel.removeAll();
+            JTextArea alertsArea = new JTextArea();
+            alertsArea.setEditable(false);
+            try {
+                List<Inventory> lowStock = inventoryDAO.getAllInventory().stream()
+                    .filter(i -> i.getQuantity() < i.getThreshold())
+                    .toList();
+                StringBuilder sb = new StringBuilder();
+                for (Inventory inv : lowStock) {
+                    Drinks drink = drinkDAO.getDrinkById(inv.getDrinkId());
+                    sb.append("LOW STOCK: ")
+                      .append(drink != null ? drink.getName() : "Drink#"+inv.getDrinkId())
+                      .append(" (Qty: ").append(inv.getQuantity()).append(", Threshold: ").append(inv.getThreshold()).append(")\n");
+                }
+                alertsArea.setText(sb.toString());
+            } catch (Exception e) {
+                e.printStackTrace();
+                alertsArea.setText("Error loading alerts: " + e.getMessage());
+            }
+            alertsPanel.add(new JScrollPane(alertsArea), BorderLayout.CENTER);
+            alertsPanel.revalidate();
+            alertsPanel.repaint();
         }
+        // TODO: Add similar refresh logic for reports and inventory panels if needed
     }
     
     public static void main(String[] args) {
@@ -665,9 +752,6 @@ public class HeadquartersDashboard extends JFrame {
         } catch (Exception e) {
             // Ignore - will use default
         }
-        
-        // Load stock data if needed
-        HeadquartersServer.loadStock();
         
         // Launch dashboard
         SwingUtilities.invokeLater(() -> {

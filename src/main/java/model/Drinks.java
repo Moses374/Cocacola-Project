@@ -12,6 +12,9 @@ public class Drinks {
     private Map<String, Double> sizes; // Size -> Price mapping
     private String description;
     private String category;
+    private int drinkId; // DB primary key
+    private String brand;
+    private double unitPrice;
 
     public Drinks() {
         this.sizes = new HashMap<>();
@@ -25,6 +28,23 @@ public class Drinks {
         this.color = color;
         this.category = category;
         this.description = description;
+    }
+
+    // Constructor for DB mapping
+    public Drinks(int drinkId, String name, String brand, double unitPrice) {
+        this.drinkId = drinkId;
+        this.name = name;
+        this.brand = brand;
+        this.unitPrice = unitPrice;
+        this.sizes = new HashMap<>();
+    }
+
+    // Constructor for DB insert
+    public Drinks(String name, String brand, double unitPrice) {
+        this.name = name;
+        this.brand = brand;
+        this.unitPrice = unitPrice;
+        this.sizes = new HashMap<>();
     }
 
     // Getters and Setters
@@ -105,6 +125,13 @@ public class Drinks {
     public void setCategory(String category) {
         this.category = category;
     }
+
+    public int getDrinkId() { return drinkId; }
+    public void setDrinkId(int drinkId) { this.drinkId = drinkId; }
+    public String getBrand() { return brand; }
+    public void setBrand(String brand) { this.brand = brand; }
+    public double getUnitPrice() { return unitPrice; }
+    public void setUnitPrice(double unitPrice) { this.unitPrice = unitPrice; }
 
     // Utility methods
     public boolean isAvailable() {

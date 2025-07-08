@@ -14,8 +14,15 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.net.URL;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.ResourceBundle;
+
+import com.example.dao.CustomerDAO;
+import com.example.dao.BranchDAO;
+import com.example.dao.OrderDAO;
+import model.*;
 
 public class CartController implements Initializable {
 
@@ -28,8 +35,13 @@ public class CartController implements Initializable {
     @FXML private Label totalItemsLabel;
     @FXML private Label totalAmountLabel;
     @FXML private Button checkoutButton;
+    @FXML private ComboBox<Customer> customerComboBox;
+    @FXML private ComboBox<Branch> branchComboBox;
 
     private CartManager cartManager;
+    private CustomerDAO customerDAO = new CustomerDAO();
+    private BranchDAO branchDAO = new BranchDAO();
+    private OrderDAO orderDAO = new OrderDAO();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -46,6 +58,14 @@ public class CartController implements Initializable {
 
         // Initial display update
         updateCartDisplay();
+
+        // Populate customer and branch combo boxes using DAOs
+        try {
+            customerComboBox.getItems().setAll(customerDAO.getAllCustomers());
+            branchComboBox.getItems().setAll(branchDAO.getAllBranches());
+        } catch (Exception e) {
+            showAlert("Error", "Failed to load customers or branches: " + e.getMessage());
+        }
     }
 
     private void updateCartDisplay() {
@@ -119,6 +139,12 @@ public class CartController implements Initializable {
             showAlert("Empty Cart", "Your cart is empty. Add items before checkout.");
             return;
         }
+        Customer selectedCustomer = customerComboBox.getValue();
+        Branch selectedBranch = branchComboBox.getValue();
+        if (selectedCustomer == null || selectedBranch == null) {
+            showAlert("Missing Info", "Please select a customer and branch before checkout.");
+            return;
+        }
 
         // Create checkout summary
         StringBuilder summary = new StringBuilder();
@@ -141,29 +167,23 @@ public class CartController implements Initializable {
 
         Optional<ButtonType> result = checkoutAlert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            // Process checkout - you can implement payment processing here
-            processCheckout();
+            processCheckout(selectedCustomer, selectedBranch);
         }
     }
 
-    private void processCheckout() {
-        // Simulate checkout process
-        Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
-        successAlert.setTitle("Order Confirmed");
-        successAlert.setHeaderText("Thank you for your order!");
-        successAlert.setContentText(String.format(
-                "Your order of %d items totaling KSh %.2f has been confirmed.\n" +
-                        "You will receive a confirmation email shortly.",
-                cartManager.getTotalItems(),
-                cartManager.getTotalAmount()));
-
-        successAlert.showAndWait();
-
-        // Clear cart after successful checkout
-        cartManager.clearCart();
-
-        // Navigate back to main view
-        goBack();
+    private void processCheckout(Customer customer, Branch branch) {
+        try {
+            // 1. Create order
+            Order order = new Order(customer.getCustomerId(), branch.getBranchId(), Timestamp.from(Instant.now()));
+            int orderId = orderDAO.addOrder(order);
+            if (orderId == -1) throw new Exception("Failed to create order");
+            // 2. (Order items and inventory update handled here if needed)
+            showAlert("Order Confirmed", "Your order has been placed successfully!");
+            cartManager.clearCart();
+            goBack();
+        } catch (Exception e) {
+            showAlert("Checkout Error", "Failed to process order: " + e.getMessage());
+        }
     }
 
     private void showAlert(String title, String message) {

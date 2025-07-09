@@ -1,5 +1,6 @@
 package model;
 
+import com.example.dao.BaseDAO;
 import com.example.dao.UserDAO;
 import javax.swing.*;
 import java.awt.*;
@@ -15,6 +16,7 @@ public class MainLauncher extends JFrame {
     private JButton loginButton;
     private JButton guestButton;
     private JLabel statusLabel;
+    private JTextField dbHostField;
     
     // Colors for UI
     private Color primaryColor = new Color(237, 28, 36);    // Coca-Cola red
@@ -23,7 +25,7 @@ public class MainLauncher extends JFrame {
     
     public MainLauncher() {
         setTitle("Drinks Distribution System");
-        setSize(500, 400);
+        setSize(500, 450); // Increased height for DB config
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         
@@ -45,6 +47,19 @@ public class MainLauncher extends JFrame {
         
         headerPanel.add(titleLabel, BorderLayout.NORTH);
         headerPanel.add(subtitleLabel, BorderLayout.SOUTH);
+        
+        // Database configuration panel
+        JPanel dbConfigPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        dbConfigPanel.setOpaque(false);
+        
+        JLabel dbHostLabel = new JLabel("Database Host:");
+        dbHostField = new JTextField(BaseDAO.getDatabaseHost(), 15);
+        JButton dbConnectButton = new JButton("Connect");
+        dbConnectButton.addActionListener(e -> updateDatabaseHost());
+        
+        dbConfigPanel.add(dbHostLabel);
+        dbConfigPanel.add(dbHostField);
+        dbConfigPanel.add(dbConnectButton);
         
         // Guest button panel (at the top for prominence)
         JPanel guestPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
@@ -118,7 +133,16 @@ public class MainLauncher extends JFrame {
         
         // Add components to main panel
         mainPanel.add(headerPanel, BorderLayout.NORTH);
-        mainPanel.add(guestPanel, BorderLayout.CENTER);
+        
+        // Create center panel with DB config and guest button
+        JPanel centerPanel = new JPanel();
+        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
+        centerPanel.setOpaque(false);
+        centerPanel.add(dbConfigPanel);
+        centerPanel.add(Box.createVerticalStrut(20));
+        centerPanel.add(guestPanel);
+        
+        mainPanel.add(centerPanel, BorderLayout.CENTER);
         
         // Add separator and admin section
         JPanel southPanel = new JPanel();
@@ -136,6 +160,31 @@ public class MainLauncher extends JFrame {
         
         // Check if admin user exists, create if not
         ensureAdminUserExists();
+    }
+    
+    private void updateDatabaseHost() {
+        String newHost = dbHostField.getText().trim();
+        if (!newHost.isEmpty()) {
+            BaseDAO.setDatabaseHost(newHost);
+            statusLabel.setForeground(new Color(0, 128, 0)); // Green color
+            statusLabel.setText("Database host updated to: " + newHost);
+            
+            // Test the connection
+            try {
+                UserDAO userDAO = new UserDAO();
+                userDAO.getAllUsers();
+                JOptionPane.showMessageDialog(this, 
+                    "Successfully connected to database at " + newHost,
+                    "Connection Successful", JOptionPane.INFORMATION_MESSAGE);
+            } catch (SQLException ex) {
+                statusLabel.setForeground(Color.RED);
+                statusLabel.setText("Error connecting to database: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+        } else {
+            statusLabel.setForeground(Color.RED);
+            statusLabel.setText("Database host cannot be empty");
+        }
     }
     
     private JButton createStyledButton(String text, Color color) {
@@ -228,6 +277,17 @@ public class MainLauncher extends JFrame {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
             e.printStackTrace();
+        }
+        
+        // Process command line arguments
+        for (String arg : args) {
+            if (arg.startsWith("--dbhost=")) {
+                String host = arg.substring("--dbhost=".length());
+                if (!host.isEmpty()) {
+                    BaseDAO.setDatabaseHost(host);
+                    System.out.println("Database host set to: " + host);
+                }
+            }
         }
         
         // Start application

@@ -21,6 +21,38 @@ The system is built with a hybrid architecture:
 2. **JavaFX-based Ordering Interface** - Offers a modern UI for the ordering system
 3. **MySQL Database** - Stores all system data including inventory, orders, users, and customers
 
+## Multi-Device Presentation Setup
+
+The system is designed to be demonstrated across multiple devices:
+
+1. **Administrator Device** - Runs the admin interface to monitor and manage the system
+2. **Customer Devices (3)** - Each representing a different branch, running the ordering interface
+
+This setup allows for a realistic demonstration where:
+- Customers can place orders simultaneously from different branches
+- The administrator can view real-time updates and generate reports
+- Inventory changes are reflected across the system
+
+### Setting Up the Multi-Device Demo
+
+1. Ensure all devices are connected to the same network
+2. Set up the MySQL database on a host machine that's accessible to all devices
+3. Update the database connection settings in `BaseDAO.java` on each device:
+   ```java
+   String url = "jdbc:mysql://HOST_IP:3306/drinks_distributor";
+   ```
+4. On the admin device:
+   ```
+   java -cp "target/classes;mysql-connector-j-9.3.0.jar" com.example.App
+   ```
+   Then log in with admin credentials
+
+5. On each customer device:
+   ```
+   mvn clean javafx:run
+   ```
+   Or use the guest login option from the main launcher
+
 ## Key Components
 
 ### Main Launcher (Entry Point)

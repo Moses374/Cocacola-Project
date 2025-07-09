@@ -2,6 +2,8 @@ module com.example.demo1 {
     // Essential modules only
     requires javafx.controls;
     requires javafx.fxml;
+    requires transitive javafx.graphics;
+    requires transitive javafx.base;
     requires java.desktop;
     requires java.sql;
 

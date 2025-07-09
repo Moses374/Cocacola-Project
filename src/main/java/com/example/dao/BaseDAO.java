@@ -3,7 +3,7 @@ package com.example.dao;
 import java.sql.*;
 
 public abstract class BaseDAO {
-    protected Connection getConnection() throws SQLException {
+    public Connection getConnection() throws SQLException {
         // Update with your DB credentials if needed
         String url = "jdbc:mysql://localhost:3306/drinks_distributor";
         String user = "root";

@@ -1,16 +1,11 @@
+-- Complete SQL Script for Drinks Distributor Database
+-- This script creates the database, tables, and fixes the checkout issues
+
 -- Create and select the database
 CREATE DATABASE IF NOT EXISTS drinks_distributor;
 USE drinks_distributor;
 
--- phpMyAdmin SQL Dump
--- version 5.2.1
--- https://www.phpmyadmin.net/
---
--- Host: 127.0.0.1
--- Generation Time: Jul 01, 2025 at 04:32 PM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.0.30
-
+-- Set SQL mode and character set
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
@@ -19,6 +14,27 @@ SET time_zone = "+00:00";
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
+
+-- Drop existing tables if they exist (to start fresh)
+DROP TABLE IF EXISTS `order_items`;
+DROP TABLE IF EXISTS `orders`;
+DROP TABLE IF EXISTS `inventory`;
+DROP TABLE IF EXISTS `drinks`;
+DROP TABLE IF EXISTS `customers`;
+DROP TABLE IF EXISTS `branches`;
+DROP TABLE IF EXISTS `users`;
+
+-- Table structure for table `users`
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `username` varchar(50) NOT NULL UNIQUE,
+  `password` varchar(255) NOT NULL,
+  `role` varchar(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Add default admin user
+INSERT INTO `users` (`username`, `password`, `role`) VALUES
+('ADMIN1', 'passadmin', 'admin');
 
 -- Table structure for table `branches`
 CREATE TABLE `branches` (
@@ -58,7 +74,6 @@ CREATE TABLE `drinks` (
 
 -- Dumping data for table `drinks`
 INSERT INTO `drinks` (`drink_id`, `name`, `brand`, `unit_price`) VALUES
-(8, '', '', 0.00),
 (9, 'Fanta Orange 500ml', 'Coca-Cola Company', 80.00),
 (10, 'Fanta Orange 300ml', 'Coca-Cola Company', 50.00),
 (11, 'Fanta Orange 1L', 'Coca-Cola Company', 120.00),
@@ -94,47 +109,164 @@ INSERT INTO `drinks` (`drink_id`, `name`, `brand`, `unit_price`) VALUES
 -- Table structure for table `inventory`
 CREATE TABLE `inventory` (
   `inventory_id` int(11) NOT NULL,
-  `drink_id` int(11) DEFAULT NULL,
-  `branch_id` int(11) DEFAULT NULL,
+  `drink_id` int(11) NOT NULL,
+  `branch_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL,
   `threshold` int(11) NOT NULL DEFAULT 10
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table `inventory`
+-- Add comprehensive inventory data for all drinks across all branches
 INSERT INTO `inventory` (`inventory_id`, `drink_id`, `branch_id`, `quantity`, `threshold`) VALUES
-(1, NULL, NULL, 0, 10),
-(132, NULL, NULL, 0, 10);
+-- NAIROBI BRANCH (ID: 5)
+(1, 9, 5, 150, 20),   -- Fanta Orange 500ml
+(2, 10, 5, 100, 15),  -- Fanta Orange 300ml
+(3, 11, 5, 80, 10),   -- Fanta Orange 1L
+(4, 12, 5, 120, 20),  -- Coca-Cola 500ml
+(5, 13, 5, 90, 15),   -- Coca-Cola 300ml
+(6, 14, 5, 70, 10),   -- Coca-Cola 1L
+(7, 15, 5, 60, 10),   -- Minute Maid 500ml
+(8, 16, 5, 80, 15),   -- Minute Maid 330ml
+(9, 17, 5, 40, 8),    -- Minute Maid 1L
+(10, 18, 5, 100, 15), -- Pepsi 500ml
+(11, 19, 5, 75, 12),  -- Pepsi 300ml
+(12, 20, 5, 50, 8),   -- Pepsi 1L
+(13, 21, 5, 30, 5),   -- Red Bull 250ml
+(14, 22, 5, 20, 5),   -- Red Bull 350ml
+(15, 23, 5, 45, 8),   -- Schweppes Tonic 500ml
+(16, 24, 5, 60, 10),  -- Schweppes Tonic 300ml
+(17, 25, 5, 55, 10),  -- Coca-Cola Diet 500ml
+(18, 26, 5, 40, 8),   -- Coca-Cola Diet 300ml
+(19, 27, 5, 35, 6),   -- Coca-Cola Diet 1L
+(20, 28, 5, 110, 20), -- Sprite 500ml
+(21, 29, 5, 85, 15),  -- Sprite 300ml
+(22, 30, 5, 65, 10),  -- Sprite 1L
+(23, 31, 5, 200, 30), -- Water 500ml
+(24, 32, 5, 150, 25), -- Water 1.5L
+(25, 33, 5, 180, 30), -- Water 1L
+(26, 34, 5, 70, 12),  -- 7UP 500ml
+(27, 35, 5, 50, 10),  -- 7UP 300ml
+(28, 36, 5, 40, 8),   -- 7UP 1L
+(29, 37, 5, 90, 15),  -- Fanta Pineapple 500ml
+(30, 38, 5, 70, 12),  -- Fanta Pineapple 300ml
+(31, 39, 5, 55, 10),  -- Fanta Pineapple 1L
+
+-- NAKURU BRANCH (ID: 2)
+(32, 9, 2, 80, 15),   -- Fanta Orange 500ml
+(33, 10, 2, 60, 10),  -- Fanta Orange 300ml
+(34, 11, 2, 40, 8),   -- Fanta Orange 1L
+(35, 12, 2, 70, 15),  -- Coca-Cola 500ml
+(36, 13, 2, 55, 10),  -- Coca-Cola 300ml
+(37, 14, 2, 35, 6),   -- Coca-Cola 1L
+(38, 15, 2, 25, 5),   -- Minute Maid 500ml
+(39, 16, 2, 40, 8),   -- Minute Maid 330ml
+(40, 17, 2, 20, 5),   -- Minute Maid 1L
+(41, 18, 2, 65, 12),  -- Pepsi 500ml
+(42, 19, 2, 45, 8),   -- Pepsi 300ml
+(43, 20, 2, 30, 6),   -- Pepsi 1L
+(44, 21, 2, 15, 3),   -- Red Bull 250ml
+(45, 22, 2, 10, 3),   -- Red Bull 350ml
+(46, 23, 2, 25, 5),   -- Schweppes Tonic 500ml
+(47, 24, 2, 35, 6),   -- Schweppes Tonic 300ml
+(48, 25, 2, 30, 5),   -- Coca-Cola Diet 500ml
+(49, 26, 2, 25, 5),   -- Coca-Cola Diet 300ml
+(50, 27, 2, 20, 4),   -- Coca-Cola Diet 1L
+(51, 28, 2, 75, 12),  -- Sprite 500ml
+(52, 29, 2, 50, 8),   -- Sprite 300ml
+(53, 30, 2, 40, 6),   -- Sprite 1L
+(54, 31, 2, 120, 20), -- Water 500ml
+(55, 32, 2, 90, 15),  -- Water 1.5L
+(56, 33, 2, 100, 18), -- Water 1L
+(57, 34, 2, 45, 8),   -- 7UP 500ml
+(58, 35, 2, 30, 6),   -- 7UP 300ml
+(59, 36, 2, 25, 5),   -- 7UP 1L
+(60, 37, 2, 55, 10),  -- Fanta Pineapple 500ml
+(61, 38, 2, 40, 8),   -- Fanta Pineapple 300ml
+(62, 39, 2, 30, 6),   -- Fanta Pineapple 1L
+
+-- MOMBASA BRANCH (ID: 3)
+(63, 9, 3, 95, 18),   -- Fanta Orange 500ml
+(64, 10, 3, 70, 12),  -- Fanta Orange 300ml
+(65, 11, 3, 50, 8),   -- Fanta Orange 1L
+(66, 12, 3, 85, 15),  -- Coca-Cola 500ml
+(67, 13, 3, 65, 12),  -- Coca-Cola 300ml
+(68, 14, 3, 45, 8),   -- Coca-Cola 1L
+(69, 15, 3, 35, 6),   -- Minute Maid 500ml
+(70, 16, 3, 50, 10),  -- Minute Maid 330ml
+(71, 17, 3, 25, 5),   -- Minute Maid 1L
+(72, 18, 3, 75, 12),  -- Pepsi 500ml
+(73, 19, 3, 55, 10),  -- Pepsi 300ml
+(74, 20, 3, 35, 6),   -- Pepsi 1L
+(75, 21, 3, 20, 4),   -- Red Bull 250ml
+(76, 22, 3, 15, 3),   -- Red Bull 350ml
+(77, 23, 3, 30, 6),   -- Schweppes Tonic 500ml
+(78, 24, 3, 45, 8),   -- Schweppes Tonic 300ml
+(79, 25, 3, 40, 8),   -- Coca-Cola Diet 500ml
+(80, 26, 3, 30, 6),   -- Coca-Cola Diet 300ml
+(81, 27, 3, 25, 5),   -- Coca-Cola Diet 1L
+(82, 28, 3, 90, 15),  -- Sprite 500ml
+(83, 29, 3, 65, 12),  -- Sprite 300ml
+(84, 30, 3, 50, 8),   -- Sprite 1L
+(85, 31, 3, 150, 25), -- Water 500ml
+(86, 32, 3, 110, 20), -- Water 1.5L
+(87, 33, 3, 130, 22), -- Water 1L
+(88, 34, 3, 55, 10),  -- 7UP 500ml
+(89, 35, 3, 40, 8),   -- 7UP 300ml
+(90, 36, 3, 30, 6),   -- 7UP 1L
+(91, 37, 3, 70, 12),  -- Fanta Pineapple 500ml
+(92, 38, 3, 50, 10),  -- Fanta Pineapple 300ml
+(93, 39, 3, 40, 8),   -- Fanta Pineapple 1L
+
+-- KISUMU BRANCH (ID: 4)
+(94, 9, 4, 60, 12),   -- Fanta Orange 500ml
+(95, 10, 4, 45, 8),   -- Fanta Orange 300ml
+(96, 11, 4, 30, 6),   -- Fanta Orange 1L
+(97, 12, 4, 55, 10),  -- Coca-Cola 500ml
+(98, 13, 4, 40, 8),   -- Coca-Cola 300ml
+(99, 14, 4, 25, 5),   -- Coca-Cola 1L
+(100, 15, 4, 20, 4),  -- Minute Maid 500ml
+(101, 16, 4, 30, 6),  -- Minute Maid 330ml
+(102, 17, 4, 15, 3),  -- Minute Maid 1L
+(103, 18, 4, 50, 10), -- Pepsi 500ml
+(104, 19, 4, 35, 6),  -- Pepsi 300ml
+(105, 20, 4, 25, 5),  -- Pepsi 1L
+(106, 21, 4, 12, 3),  -- Red Bull 250ml
+(107, 22, 4, 8, 2),   -- Red Bull 350ml
+(108, 23, 4, 20, 4),  -- Schweppes Tonic 500ml
+(109, 24, 4, 25, 5),  -- Schweppes Tonic 300ml
+(110, 25, 4, 25, 5),  -- Coca-Cola Diet 500ml
+(111, 26, 4, 20, 4),  -- Coca-Cola Diet 300ml
+(112, 27, 4, 15, 3),  -- Coca-Cola Diet 1L
+(113, 28, 4, 60, 12), -- Sprite 500ml
+(114, 29, 4, 40, 8),  -- Sprite 300ml
+(115, 30, 4, 30, 6),  -- Sprite 1L
+(116, 31, 4, 100, 18), -- Water 500ml
+(117, 32, 4, 75, 12),  -- Water 1.5L
+(118, 33, 4, 85, 15),  -- Water 1L
+(119, 34, 4, 35, 6),   -- 7UP 500ml
+(120, 35, 4, 25, 5),   -- 7UP 300ml
+(121, 36, 4, 20, 4),   -- 7UP 1L
+(122, 37, 4, 45, 8),   -- Fanta Pineapple 500ml
+(123, 38, 4, 30, 6),   -- Fanta Pineapple 300ml
+(124, 39, 4, 25, 5);   -- Fanta Pineapple 1L
 
 -- Table structure for table `orders`
 CREATE TABLE `orders` (
   `order_id` int(11) NOT NULL,
-  `customer_id` int(11) DEFAULT NULL,
-  `branch_id` int(11) DEFAULT NULL,
+  `customer_id` int(11) NOT NULL,
+  `branch_id` int(11) NOT NULL,
   `order_date` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Dumping data for table `orders`
-INSERT INTO `orders` (`order_id`, `customer_id`, `branch_id`, `order_date`) VALUES
-(1, NULL, NULL, '2025-06-28 21:38:47');
 
 -- Table structure for table `order_items`
 CREATE TABLE `order_items` (
   `order_item_id` int(11) NOT NULL,
-  `order_id` int(11) DEFAULT NULL,
-  `drink_id` int(11) DEFAULT NULL,
+  `order_id` int(11) NOT NULL,
+  `drink_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL,
   `price` decimal(10,2) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table `order_items`
-INSERT INTO `order_items` (`order_item_id`, `order_id`, `drink_id`, `quantity`, `price`) VALUES
-(1, NULL, NULL, 0, 0.00),
-(2, NULL, NULL, 0, 0.00),
-(5, NULL, NULL, 0, 0.00),
-(7, NULL, NULL, 0, 0.00),
-(10, NULL, NULL, 0, 0.00);
-
--- Indexes
+-- Add primary keys and indexes
 ALTER TABLE `branches` ADD PRIMARY KEY (`branch_id`), ADD UNIQUE KEY `branch_name` (`branch_name`);
 ALTER TABLE `customers` ADD PRIMARY KEY (`customer_id`);
 ALTER TABLE `drinks` ADD PRIMARY KEY (`drink_id`);
@@ -142,26 +274,91 @@ ALTER TABLE `inventory` ADD PRIMARY KEY (`inventory_id`), ADD KEY `drink_id` (`d
 ALTER TABLE `orders` ADD PRIMARY KEY (`order_id`), ADD KEY `customer_id` (`customer_id`), ADD KEY `branch_id` (`branch_id`);
 ALTER TABLE `order_items` ADD PRIMARY KEY (`order_item_id`), ADD KEY `order_id` (`order_id`), ADD KEY `drink_id` (`drink_id`);
 
--- Auto-increment values
+-- Set auto-increment values
 ALTER TABLE `branches` MODIFY `branch_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 ALTER TABLE `customers` MODIFY `customer_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 ALTER TABLE `drinks` MODIFY `drink_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
-ALTER TABLE `inventory` MODIFY `inventory_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=172;
-ALTER TABLE `orders` MODIFY `order_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-ALTER TABLE `order_items` MODIFY `order_item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+ALTER TABLE `inventory` MODIFY `inventory_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=125;
+ALTER TABLE `orders` MODIFY `order_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+ALTER TABLE `order_items` MODIFY `order_item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 
--- Foreign key constraints
+-- Add foreign key constraints
 ALTER TABLE `inventory`
-  ADD CONSTRAINT `inventory_ibfk_1` FOREIGN KEY (`drink_id`) REFERENCES `drinks` (`drink_id`),
-  ADD CONSTRAINT `inventory_ibfk_2` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`branch_id`);
+  ADD CONSTRAINT `inventory_ibfk_1` FOREIGN KEY (`drink_id`) REFERENCES `drinks` (`drink_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `inventory_ibfk_2` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`branch_id`) ON DELETE CASCADE;
 
 ALTER TABLE `orders`
-  ADD CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`customer_id`),
-  ADD CONSTRAINT `orders_ibfk_2` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`branch_id`);
+  ADD CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`customer_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `orders_ibfk_2` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`branch_id`) ON DELETE CASCADE;
 
 ALTER TABLE `order_items`
-  ADD CONSTRAINT `order_items_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`),
-  ADD CONSTRAINT `order_items_ibfk_2` FOREIGN KEY (`drink_id`) REFERENCES `drinks` (`drink_id`);
+  ADD CONSTRAINT `order_items_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `order_items_ibfk_2` FOREIGN KEY (`drink_id`) REFERENCES `drinks` (`drink_id`) ON DELETE CASCADE;
+
+-- Sample checkout process for Halima Musa's Fanta Orange order
+START TRANSACTION;
+
+-- Create the order
+INSERT INTO orders (customer_id, branch_id, order_date) 
+VALUES (4, 5, NOW());
+
+-- Get the order ID that was just created
+SET @order_id = LAST_INSERT_ID();
+
+-- Add the order item
+INSERT INTO order_items (order_id, drink_id, quantity, price) 
+VALUES (@order_id, 9, 1, 80.00);
+
+-- Update inventory (stock tracking enabled)
+UPDATE inventory SET quantity = quantity - 1 
+WHERE drink_id = 9 AND branch_id = 5;
+
+COMMIT;
+
+-- Create a stored procedure for future checkouts
+DELIMITER //
+CREATE PROCEDURE ProcessCheckout(
+    IN p_customer_id INT,
+    IN p_branch_id INT,
+    IN p_drink_id INT,
+    IN p_quantity INT,
+    IN p_price DECIMAL(10,2)
+)
+BEGIN
+    DECLARE v_order_id INT;
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+    
+    START TRANSACTION;
+    
+    -- Create the order
+    INSERT INTO orders (customer_id, branch_id, order_date) 
+    VALUES (p_customer_id, p_branch_id, NOW());
+    
+    -- Get the order ID
+    SET v_order_id = LAST_INSERT_ID();
+    
+    -- Add the order item
+    INSERT INTO order_items (order_id, drink_id, quantity, price) 
+    VALUES (v_order_id, p_drink_id, p_quantity, p_price);
+    
+    -- Update inventory
+    UPDATE inventory 
+    SET quantity = quantity - p_quantity 
+    WHERE drink_id = p_drink_id AND branch_id = p_branch_id;
+    
+    COMMIT;
+    
+    -- Return the order ID
+    SELECT v_order_id as order_id;
+END//
+DELIMITER ;
+
+-- Example usage of the stored procedure:
+-- CALL ProcessCheckout(4, 5, 9, 1, 80.00);
 
 COMMIT;
 

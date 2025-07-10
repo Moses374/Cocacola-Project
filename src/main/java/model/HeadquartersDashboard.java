@@ -15,6 +15,7 @@ import com.example.dao.DrinkDAO;
 import com.example.dao.OrderDAO;
 import com.example.dao.CustomerDAO;
 import com.example.dao.OrderItemDAO;
+import java.sql.SQLException;
 
 public class HeadquartersDashboard extends JFrame {
     // Theme colors - flat design
@@ -130,8 +131,28 @@ public class HeadquartersDashboard extends JFrame {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBackground(backgroundColor);
         
-        // Table for inventory
-        String[] columns = {"Product", "Price (KES)", "Stock", "Status"};
+        // Add branch selection at the top
+        JPanel branchSelectionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        branchSelectionPanel.setBackground(backgroundColor);
+        branchSelectionPanel.add(new JLabel("Select Branch:"));
+        
+        JComboBox<Branch> branchComboBox = new JComboBox<>();
+        try {
+            // Add "All Branches" option
+            branchComboBox.addItem(new Branch(0, "All Branches", ""));
+            
+            // Add actual branches
+            for (Branch branch : branchDAO.getAllBranches()) {
+                branchComboBox.addItem(branch);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        branchSelectionPanel.add(branchComboBox);
+        panel.add(branchSelectionPanel, BorderLayout.NORTH);
+        
+        // Table for inventory with branch information
+        String[] columns = {"Branch", "Drink ID", "Product", "Price (KES)", "Stock", "Status"};
         DefaultTableModel model = new DefaultTableModel(columns, 0);
         stockTable = new JTable(model) {
             @Override
@@ -144,7 +165,7 @@ public class HeadquartersDashboard extends JFrame {
                 Component c = super.prepareRenderer(renderer, row, column);
                 
                 // Color rows based on stock status
-                if (column == 3 && "LOW STOCK".equals(getValueAt(row, 3))) {
+                if (column == 5 && "LOW STOCK".equals(getValueAt(row, 5))) {
                     c.setForeground(Color.RED);
                 } else {
                     c.setForeground(Color.BLACK);
@@ -233,6 +254,14 @@ public class HeadquartersDashboard extends JFrame {
         updateButton.addActionListener(e -> updateProduct());
         orderButton.addActionListener(e -> showOrderDialog());
         
+        // Add branch selection listener to filter inventory by branch
+        branchComboBox.addActionListener(e -> {
+            Branch selectedBranch = (Branch) branchComboBox.getSelectedItem();
+            if (selectedBranch != null) {
+                loadProductDataByBranch(selectedBranch.getBranchId());
+            }
+        });
+        
         // Add selection listener to populate fields when product is selected
         productBox.addActionListener(e -> {
             String selected = (String) productBox.getSelectedItem();
@@ -268,7 +297,80 @@ public class HeadquartersDashboard extends JFrame {
         } catch (Exception e) { e.printStackTrace(); }
         
         panel.add(formPanel, BorderLayout.SOUTH);
+        
+        // Initial load of all branches data
+        loadProductDataByBranch(0);
+        
         return panel;
+    }
+    
+    // Load product data filtered by branch ID (0 means all branches)
+    private void loadProductDataByBranch(int branchId) {
+        try {
+            List<Drinks> drinksList = drinkDAO.getAllDrinks();
+            List<Inventory> inventoryList = inventoryDAO.getAllInventory();
+            List<Branch> branchesList = branchDAO.getAllBranches();
+            
+            DefaultTableModel model = (DefaultTableModel) stockTable.getModel();
+            model.setRowCount(0);
+            
+            for (Drinks drink : drinksList) {
+                // Filter inventory by branch if specified
+                List<Inventory> filteredInventory;
+                if (branchId == 0) {
+                    // Show all branches
+                    filteredInventory = inventoryList.stream()
+                        .filter(i -> i.getDrinkId() == drink.getDrinkId())
+                        .toList();
+                } else {
+                    // Show only selected branch
+                    filteredInventory = inventoryList.stream()
+                        .filter(i -> i.getDrinkId() == drink.getDrinkId() && i.getBranchId() == branchId)
+                        .toList();
+                }
+                
+                // If no inventory records exist for this drink, create a default one for display
+                if (filteredInventory.isEmpty() && branchId != 0) {
+                    model.addRow(new Object[]{
+                        getBranchName(branchId),
+                        drink.getDrinkId(),
+                        drink.getName(),
+                        drink.getUnitPrice(),
+                        0,
+                        "NO STOCK"
+                    });
+                } else {
+                    // Add a row for each inventory record
+                    for (Inventory inv : filteredInventory) {
+                        String branchName = getBranchName(inv.getBranchId());
+                        int stock = inv.getQuantity();
+                        String status = stock < inv.getThreshold() ? "LOW STOCK" : "In Stock";
+                        
+                        model.addRow(new Object[]{
+                            branchName,
+                            drink.getDrinkId(),
+                            drink.getName(),
+                            drink.getUnitPrice(),
+                            stock,
+                            status
+                        });
+                    }
+                }
+            }
+        } catch (Exception e) { 
+            e.printStackTrace(); 
+        }
+    }
+    
+    // Helper method to get branch name from ID
+    private String getBranchName(int branchId) {
+        try {
+            Branch branch = branchDAO.getBranchById(branchId);
+            return branch != null ? branch.getBranchName() : "Unknown Branch";
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return "Unknown Branch";
+        }
     }
     
     // LOW STOCK ALERTS PANEL
@@ -442,27 +544,13 @@ public class HeadquartersDashboard extends JFrame {
             for (Inventory inv : inventoryList) {
                 System.out.println("Inventory: id=" + inv.getInventoryId() + ", drink_id=" + inv.getDrinkId() + ", branch_id=" + inv.getBranchId() + ", qty=" + inv.getQuantity());
             }
-            DefaultTableModel model = (DefaultTableModel) stockTable.getModel();
-            model.setRowCount(0);
+            
+            // Use the new method to load data for all branches (branch ID 0)
+            loadProductDataByBranch(0);
+            
+            // Update product dropdown
             productBox.removeAllItems();
-            // Use drinks for names/prices, inventory for stock
             for (Drinks drink : drinksList) {
-                Inventory inv = inventoryList.stream()
-                    .filter(i -> i.getDrinkId() == drink.getDrinkId() && i.getBranchId() == 5)
-                    .findFirst().orElse(null);
-                if (inv == null) {
-                    // Auto-create inventory row for HQ if missing
-                    inv = new Inventory(drink.getDrinkId(), 5, 0, 10);
-                    inventoryDAO.addInventory(inv);
-                }
-                int stock = inv.getQuantity();
-                String status = stock < inv.getThreshold() ? "LOW STOCK" : "In Stock";
-                model.addRow(new Object[]{
-                    drink.getName(),
-                    drink.getUnitPrice(),
-                    stock,
-                    status
-                });
                 productBox.addItem(drink.getName());
             }
         } catch (Exception e) { e.printStackTrace(); }
@@ -476,6 +564,8 @@ public class HeadquartersDashboard extends JFrame {
             // Check each product
             for (Inventory inv : inventoryDAO.getAllInventory()) {
                 Drinks drink = drinkDAO.getDrinkById(inv.getDrinkId());
+                Branch branch = branchDAO.getBranchById(inv.getBranchId());
+                
                 if (inv.getQuantity() < inv.getThreshold()) {
                     hasAlerts = true;
                     
@@ -492,10 +582,13 @@ public class HeadquartersDashboard extends JFrame {
                     JPanel infoPanel = new JPanel(new GridLayout(2, 1));
                     infoPanel.setOpaque(false);
                     
-                    JLabel nameLabel = new JLabel(drink != null ? drink.getName() : ("Drink#" + inv.getDrinkId()));
+                    String drinkName = drink != null ? drink.getName() : ("Drink#" + inv.getDrinkId());
+                    String branchName = branch != null ? branch.getBranchName() : ("Branch#" + inv.getBranchId());
+                    
+                    JLabel nameLabel = new JLabel(drinkName + " at " + branchName);
                     nameLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
                     
-                    JLabel stockLabel = new JLabel("Only " + inv.getQuantity() + " units remaining");
+                    JLabel stockLabel = new JLabel("Only " + inv.getQuantity() + " units remaining (Threshold: " + inv.getThreshold() + ")");
                     stockLabel.setForeground(Color.RED);
                     
                     infoPanel.add(nameLabel);
@@ -508,7 +601,7 @@ public class HeadquartersDashboard extends JFrame {
                         String input = JOptionPane.showInputDialog(
                             this, 
                             "Enter quantity to add:",
-                            "Restock " + (drink != null ? drink.getName() : ("Drink#" + inv.getDrinkId())),
+                            "Restock " + drinkName + " at " + branchName,
                             JOptionPane.QUESTION_MESSAGE
                         );
                         
@@ -518,7 +611,7 @@ public class HeadquartersDashboard extends JFrame {
                                 inv.setQuantity(inv.getQuantity() + qty);
                                 inventoryDAO.updateInventory(inv);
                                 JOptionPane.showMessageDialog(this, 
-                                    "Added " + qty + " units to " + (drink != null ? drink.getName() : ("Drink#" + inv.getDrinkId())));
+                                    "Added " + qty + " units to " + drinkName + " at " + branchName);
                                 updateLowStockAlerts();
                                 loadProductData();
                                 refreshDashboard(); // Repaint the entire dashboard
@@ -718,6 +811,9 @@ public class HeadquartersDashboard extends JFrame {
     
     // Refresh all dashboard data
     protected void refreshDashboard() {
+        // Refresh inventory data with all branches
+        loadProductDataByBranch(0);
+        
         // Refresh alerts
         if (alertsPanel != null) {
             alertsPanel.removeAll();
@@ -730,8 +826,11 @@ public class HeadquartersDashboard extends JFrame {
                 StringBuilder sb = new StringBuilder();
                 for (Inventory inv : lowStock) {
                     Drinks drink = drinkDAO.getDrinkById(inv.getDrinkId());
+                    Branch branch = branchDAO.getBranchById(inv.getBranchId());
                     sb.append("LOW STOCK: ")
                       .append(drink != null ? drink.getName() : "Drink#"+inv.getDrinkId())
+                      .append(" at ")
+                      .append(branch != null ? branch.getBranchName() : "Branch#"+inv.getBranchId())
                       .append(" (Qty: ").append(inv.getQuantity()).append(", Threshold: ").append(inv.getThreshold()).append(")\n");
                 }
                 alertsArea.setText(sb.toString());
@@ -743,7 +842,6 @@ public class HeadquartersDashboard extends JFrame {
             alertsPanel.revalidate();
             alertsPanel.repaint();
         }
-        // TODO: Add similar refresh logic for reports and inventory panels if needed
     }
     
     public static void main(String[] args) {

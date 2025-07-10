@@ -112,11 +112,11 @@ CREATE TABLE `inventory` (
   `drink_id` int(11) NOT NULL,
   `branch_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL,
-  `reorder_level` int(11) NOT NULL
+  `threshold` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Dumping data for table `inventory`
-INSERT INTO `inventory` (`inventory_id`, `drink_id`, `branch_id`, `quantity`, `reorder_level`) VALUES
+INSERT INTO `inventory` (`inventory_id`, `drink_id`, `branch_id`, `quantity`, `threshold`) VALUES
 -- NAIROBI HQ BRANCH (ID: 5)
 (1, 9, 5, 100, 20),  -- Fanta Orange 500ml
 (2, 10, 5, 80, 15),  -- Fanta Orange 300ml

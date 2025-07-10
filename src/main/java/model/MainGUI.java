@@ -6,6 +6,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.File;
+import java.io.PrintWriter;
 
 /**
  * MainGUI serves as the central navigation hub for the application
@@ -146,18 +147,15 @@ public class MainGUI extends JFrame {
     }
     
     /**
-     * Opens the ordering interface (JavaFX application)
+     * Opens the ordering interface
      */
     private void openOrderingInterface() {
         try {
-            String javaHome = System.getProperty("java.home");
-            String javaBin = javaHome + File.separator + "bin" + File.separator + "java";
-            String classpath = "target/classes;mysql-connector-j-9.3.0.jar";
-            String className = "model.MainLauncher";
-            ProcessBuilder builder = new ProcessBuilder(
-                javaBin, "-cp", classpath, className
-            );
-            builder.start();
+            // Execute the batch file we created
+            ProcessBuilder builder = new ProcessBuilder("cmd", "/c", "run_app.bat");
+            builder.directory(new File(System.getProperty("user.dir")));
+            Process process = builder.start();
+            
             JOptionPane.showMessageDialog(this,
                 "Launching ordering interface...",
                 "Launching Application", JOptionPane.INFORMATION_MESSAGE);

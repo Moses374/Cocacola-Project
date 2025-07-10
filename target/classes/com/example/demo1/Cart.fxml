@@ -1,130 +1,83 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-<?import javafx.scene.text.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
 
-<AnchorPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.demo1.CartController">
-    <children>
-        <VBox spacing="20.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-            <children>
-                <!-- Header -->
-                <HBox alignment="CENTER_LEFT" spacing="20.0">
-                    <children>
-                        <Button fx:id="backButton" mnemonicParsing="false" onAction="#goBack" text="← Back" />
-                        <Label text="Shopping Cart" textFill="#2c3e50">
-                            <font>
-                                <Font name="System Bold" size="24.0" />
-                            </font>
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1200.0" stylesheets="@values/style.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.demo1.CartController">
+   <children>
+      <VBox alignment="TOP_CENTER" prefHeight="800.0" prefWidth="1200.0" spacing="20.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+         <children>
+            <HBox alignment="CENTER" prefHeight="80.0" prefWidth="1200.0" style="-fx-background-color: #FF5722;">
+               <children>
+                  <Label alignment="CENTER" prefHeight="80.0" prefWidth="1200.0" text="Your Shopping Cart" textFill="WHITE">
+                     <font>
+                        <Font name="Cambria Bold" size="36.0" />
+                     </font>
+                  </Label>
+               </children>
+            </HBox>
+            <VBox alignment="TOP_CENTER" prefHeight="620.0" prefWidth="1000.0" spacing="20.0">
+               <children>
+                  <ListView fx:id="cartListView" prefHeight="500.0" prefWidth="1000.0" />
+                  <Separator prefWidth="200.0" />
+                  <HBox alignment="CENTER" spacing="30.0">
+                     <children>
+                        <Label text="Select Customer:" />
+                        <ComboBox fx:id="customerComboBox" prefWidth="200.0" />
+                        <Label text="Select Branch:" />
+                        <ComboBox fx:id="branchComboBox" prefWidth="200.0" />
+                     </children>
+                  </HBox>
+                  <HBox alignment="CENTER_RIGHT" prefHeight="50.0" prefWidth="1000.0" spacing="20.0">
+                     <children>
+                        <Label text="Total:">
+                           <font>
+                              <Font name="Cambria Bold" size="24.0" />
+                           </font>
                         </Label>
-                        <Region HBox.hgrow="ALWAYS" />
-                        <Button fx:id="clearCartButton" mnemonicParsing="false" onAction="#clearCart"
-                                style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 5;"
-                                text="Clear Cart" />
-                    </children>
-                    <padding>
-                        <Insets bottom="10.0" left="20.0" right="20.0" top="20.0" />
-                    </padding>
-                </HBox>
-
-                <!-- Main Content Area with Scroll -->
-                <StackPane VBox.vgrow="ALWAYS">
-                    <children>
-                        <!-- Empty Cart Message -->
-                        <VBox fx:id="emptyCartMessage" alignment="CENTER" spacing="20.0" visible="false">
-                            <children>
-                                <Label text="🛒" textFill="#bdc3c7">
-                                    <font>
-                                        <Font size="48.0" />
-                                    </font>
-                                </Label>
-                                <Label text="Your cart is empty" textFill="#7f8c8d">
-                                    <font>
-                                        <Font size="18.0" />
-                                    </font>
-                                </Label>
-                                <Label text="Add items from the drinks menu to get started!" textFill="#95a5a6">
-                                    <font>
-                                        <Font size="14.0" />
-                                    </font>
-                                </Label>
-                            </children>
-                            <padding>
-                                <Insets bottom="50.0" top="50.0" />
-                            </padding>
-                        </VBox>
-
-                        <!-- Cart Items with Scroll -->
-                        <ScrollPane fx:id="cartScrollPane" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED">
-                            <content>
-                                <VBox fx:id="cartItemsContainer" spacing="10.0">
-                                    <padding>
-                                        <Insets bottom="10.0" left="20.0" right="20.0" top="10.0" />
-                                    </padding>
-                                </VBox>
-                            </content>
-                        </ScrollPane>
-                    </children>
-                </StackPane>
-
-                <!-- Customer and Branch Selection -->
-                <HBox spacing="10.0" alignment="CENTER_LEFT">
-                    <children>
-                        <Label text="Customer:"/>
-                        <ComboBox fx:id="customerComboBox" prefWidth="200.0"/>
-                        <Label text="Branch:"/>
-                        <ComboBox fx:id="branchComboBox" prefWidth="200.0"/>
-                    </children>
-                </HBox>
-
-                <!-- Fixed Cart Summary at Bottom -->
-                <VBox fx:id="cartSummary" spacing="15.0" style="-fx-background-color: #f8f9fa; -fx-background-radius: 10; -fx-border-color: #e9ecef; -fx-border-radius: 10;">
-                    <children>
-                        <HBox alignment="CENTER_LEFT" spacing="10.0">
-                            <children>
-                                <Label text="Total Items:" textFill="#495057">
-                                    <font>
-                                        <Font size="16.0" />
-                                    </font>
-                                </Label>
-                                <Region HBox.hgrow="ALWAYS" />
-                                <Label fx:id="totalItemsLabel" text="0" textFill="#495057">
-                                    <font>
-                                        <Font name="System Bold" size="16.0" />
-                                    </font>
-                                </Label>
-                            </children>
-                        </HBox>
-
-                        <Separator />
-
-                        <HBox alignment="CENTER_LEFT" spacing="10.0">
-                            <children>
-                                <Label text="Total Amount:" textFill="#2c3e50">
-                                    <font>
-                                        <Font name="System Bold" size="18.0" />
-                                    </font>
-                                </Label>
-                                <Region HBox.hgrow="ALWAYS" />
-                                <Label fx:id="totalAmountLabel" text="KSh 0.00" textFill="#27ae60">
-                                    <font>
-                                        <Font name="System Bold" size="20.0" />
-                                    </font>
-                                </Label>
-                            </children>
-                        </HBox>
-
-                        <Button fx:id="checkoutButton" maxWidth="1.7976931348623157E308" mnemonicParsing="false"
-                                onAction="#checkout" prefHeight="50.0"
-                                style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-background-radius: 8; -fx-font-size: 16px; -fx-font-weight: bold;"
-                                text="Proceed to Checkout" />
-                    </children>
-                    <padding>
-                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
-                    </padding>
-                </VBox>
-            </children>
-        </VBox>
-    </children>
+                        <Label fx:id="totalLabel" text="KSh 0.00">
+                           <font>
+                              <Font name="Cambria Bold" size="24.0" />
+                           </font>
+                        </Label>
+                     </children>
+                     <padding>
+                        <Insets right="20.0" />
+                     </padding>
+                  </HBox>
+                  <HBox alignment="CENTER" prefHeight="50.0" prefWidth="1000.0" spacing="30.0">
+                     <children>
+                        <Button fx:id="backToShoppingBtn" mnemonicParsing="false" onAction="#backToShopping" prefHeight="50.0" prefWidth="200.0" style="-fx-background-color: #878787;" text="Back to Shopping" textFill="WHITE">
+                           <font>
+                              <Font name="Cambria Bold" size="16.0" />
+                           </font>
+                        </Button>
+                        <Button fx:id="clearCartBtn" mnemonicParsing="false" onAction="#clearCart" prefHeight="50.0" prefWidth="200.0" style="-fx-background-color: #FF0000;" text="Clear Cart" textFill="WHITE">
+                           <font>
+                              <Font name="Cambria Bold" size="16.0" />
+                           </font>
+                        </Button>
+                        <Button fx:id="checkoutBtn" mnemonicParsing="false" onAction="#checkout" prefHeight="50.0" prefWidth="200.0" style="-fx-background-color: #4CAF50;" text="Checkout" textFill="WHITE">
+                           <font>
+                              <Font name="Cambria Bold" size="16.0" />
+                           </font>
+                        </Button>
+                     </children>
+                  </HBox>
+               </children>
+               <padding>
+                  <Insets left="100.0" right="100.0" top="20.0" />
+               </padding>
+            </VBox>
+         </children>
+      </VBox>
+   </children>
 </AnchorPane>

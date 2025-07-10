@@ -1,30 +1,35 @@
 package com.example.demo1;
 
-import javafx.scene.image.Image;
 import model.Drinks;
 
-public class CartItem {
-    private String displayName;
-    private String selectedSize;
-    private double unitPrice;
-    private int quantity;
-    private Image image;
-    private Drinks drink;
+import java.util.Objects;
+import java.util.UUID;
 
-    // Constructors
-    public CartItem() {}
+public class CartItem {
+    private final String id;
+    private final Drinks drink;
+    private final String selectedSize;
+    private final double unitPrice;
+    private int quantity;
 
     public CartItem(Drinks drink, String selectedSize, double unitPrice, int quantity) {
+        this.id = UUID.randomUUID().toString();
         this.drink = drink;
-        this.displayName = drink.getName();
         this.selectedSize = selectedSize;
         this.unitPrice = unitPrice;
         this.quantity = quantity;
     }
 
-    // Getters
+    public String getId() {
+        return id;
+    }
+
+    public Drinks getDrink() {
+        return drink;
+    }
+
     public String getDisplayName() {
-        return displayName;
+        return drink != null ? drink.getName() : "Unknown Item";
     }
 
     public String getSelectedSize() {
@@ -39,53 +44,42 @@ public class CartItem {
         return quantity;
     }
 
+    public void setQuantity(int quantity) {
+        if (quantity > 0) {
+            this.quantity = quantity;
+        }
+    }
+
+    public void incrementQuantity() {
+        this.quantity++;
+    }
+
+    public void decrementQuantity() {
+        if (this.quantity > 1) {
+            this.quantity--;
+        }
+    }
+
     public double getTotalPrice() {
         return unitPrice * quantity;
     }
 
-    public Image getImage() {
-        return image;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CartItem cartItem = (CartItem) o;
+        return Objects.equals(id, cartItem.id);
     }
 
-    public Drinks getDrink() {
-        return drink;
-    }
-
-    // Setters
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
-
-    public void setSelectedSize(String selectedSize) {
-        this.selectedSize = selectedSize;
-    }
-
-    public void setUnitPrice(double unitPrice) {
-        this.unitPrice = unitPrice;
-    }
-
-    public void setQuantity(int quantity) {
-        this.quantity = quantity;
-    }
-
-    public void setImage(Image image) {
-        this.image = image;
-    }
-
-    public void setDrink(Drinks drink) {
-        this.drink = drink;
-        if (drink != null) {
-            this.displayName = drink.getName();
-        }
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 
     @Override
     public String toString() {
-        return "CartItem{" +
-                "displayName='" + displayName + '\'' +
-                ", selectedSize='" + selectedSize + '\'' +
-                ", unitPrice=" + unitPrice +
-                ", quantity=" + quantity +
-                '}';
+        return String.format("%s (%s) x%d - KSh %.2f each", 
+                getDisplayName(), selectedSize, quantity, unitPrice);
     }
 }

@@ -68,4 +68,17 @@ public class DrinkDAO extends BaseDAO {
             stmt.executeUpdate();
         }
     }
+
+    public void decrementStock(int drinkId, int quantity) throws SQLException {
+        String sql = "UPDATE inventory SET quantity = quantity - ? WHERE drink_id = ? AND quantity >= ?";
+        try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, quantity);
+            stmt.setInt(2, drinkId);
+            stmt.setInt(3, quantity);
+            int affected = stmt.executeUpdate();
+            if (affected == 0) {
+                throw new SQLException("Not enough stock for drink ID: " + drinkId);
+            }
+        }
+    }
 } 

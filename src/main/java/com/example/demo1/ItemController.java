@@ -5,14 +5,11 @@ import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.VBox;
 import model.Drinks;
 
+import java.util.Objects;
+
 public class ItemController {
-
-    @FXML
-    private ImageView img;
-
     @FXML
     private Label nameLabel;
 
@@ -20,15 +17,14 @@ public class ItemController {
     private Label priceLabel;
 
     @FXML
-    private VBox container;
+    private ImageView img;
 
     private Drinks drink;
     private MyListener myListener;
 
     @FXML
     private void click(MouseEvent mouseEvent) {
-        System.out.println("Item clicked: " + (drink != null ? drink.getName() : "null"));
-        if (myListener != null && drink != null) {
+        if (myListener != null) {
             myListener.onClickListener(drink);
         }
     }
@@ -36,43 +32,31 @@ public class ItemController {
     public void setData(Drinks drink, MyListener myListener) {
         this.drink = drink;
         this.myListener = myListener;
-
-        if (drink == null) {
-            System.err.println("Warning: Drink is null in setData");
-            return;
+        nameLabel.setText(drink.getName());
+        
+        // Show price range or base price
+        if (!drink.getSizes().isEmpty()) {
+            String firstSize = drink.getSizes().keySet().iterator().next();
+            double price = drink.getPrice(firstSize);
+            priceLabel.setText(String.format("KSh %.2f", price));
+        } else {
+            priceLabel.setText("Price N/A");
         }
-
-        System.out.println("Setting data for: " + drink.getName());
-
-        // Set the drink name
-        if (nameLabel != null) {
-            nameLabel.setText(drink.getName());
-        }
-
-        // Set the price range
-        if (priceLabel != null) {
-            priceLabel.setText(drink.getPriceRange());
-        }
-
-        // Load and set the image
+        
+        // Load image with error handling
         try {
-            if (drink.getImgSrc() != null) {
-                Image image = new Image(getClass().getResourceAsStream(drink.getImgSrc()));
-                if (img != null) {
-                    img.setImage(image);
-                }
-            }
+            Image image = new Image(Objects.requireNonNull(getClass().getResourceAsStream(drink.getImgSrc())));
+            img.setImage(image);
         } catch (Exception e) {
-            System.err.println("Error loading image for " + drink.getName() + ": " + drink.getImgSrc());
-            e.printStackTrace();
-            // Set a default image or leave empty
-        }
-
-        // Optional: Set background color based on drink color
-        if (container != null && drink.getColor() != null) {
-            // Add a subtle color hint to the item
-            container.setStyle("-fx-background-color: linear-gradient(to bottom, #ffffff, #" +
-                    drink.getColor() + "20); -fx-background-radius: 15;");
+            System.err.println("Error loading image: " + drink.getImgSrc());
+            try {
+                // Load default image if the drink image fails to load
+                Image defaultImage = new Image(Objects.requireNonNull(
+                        getClass().getResourceAsStream("/com/example/demo1/img/default_drink.png")));
+                img.setImage(defaultImage);
+            } catch (Exception ex) {
+                System.err.println("Error loading default image");
+            }
         }
     }
 }

@@ -1,110 +1,82 @@
-.search-bar{
-    -fx-background-color:#ffffff;
-    -fx-background-radius: 100;
-}
-
-.transparent{
-    -fx-background-color: rgba(0,0,0,0);
-}
-
-.search-button{
-    -fx-background-color: #828282;
-    -fx-background-radius: 30;
-}
-
-.right-bar{
-    -fx-background-color: #D3D3D3;
-}
-
-.shadow{
-    -fx-effect: dropShadow(three-pass-box,rgba(0,0,0,0.1), 10.0 , 0.0 , 0.0 ,10.0);
-}
-
-.chosen-drink-card{
-    -fx-background-color: #F40009;
-    -fx-background-radius: 30;
-}
-.comboBox{
-    -fx-background-color: #FFFFFF;
-    -fx-background-radius: 30;
-}
-.add-btn{
-    -fx-background-color: #FFFFFF;
-    -fx-background-radius: 100;
-}
-.free-delivery-card{
-    -fx-background-color: #D3D3D3;
-    -fx-background-radius: 30;
-}
-.shopping-branch-card{
-    -fx-background-color: #2E5A88;
-    -fx-background-radius: 30;
-}
-.branch-comboBox{
+.right-bar {
     -fx-background-color: #F5F5F5;
-    -fx-background-radius: 30;
 }
-.drink-item{
+
+.transparent {
+    -fx-background-color: rgba(0, 0, 0, 0);
+    -fx-border-width: 0px;
+}
+
+.search-bar {
     -fx-background-color: #FFFFFF;
-        -fx-background-radius: 30;
+    -fx-background-radius: 30;
+    -fx-border-radius: 30;
+}
+
+.shadow {
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10.0, 0.0, 0.0, 10.0);
+}
+
+.search-button {
+    -fx-background-color: #FF5722;
+    -fx-background-radius: 30;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.chosen-drink-card {
+    -fx-background-color: #FF8C00;
+    -fx-background-radius: 30;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 10, 0, 0, 5);
+}
+
+.comboBox {
+    -fx-background-color: white;
+    -fx-background-radius: 30;
+    -fx-border-radius: 30;
+}
+
+.branch-comboBox {
+    -fx-background-color: white;
+    -fx-background-radius: 30;
+    -fx-border-radius: 30;
+}
+
+.add-btn {
+    -fx-background-color: white;
+    -fx-background-radius: 30;
+    -fx-text-fill: #FF8C00;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+}
+
+.free-delivery-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 20;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 5);
+}
+
+.shopping-branch-card {
+    -fx-background-color: #FF5722;
+    -fx-background-radius: 20;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 5);
 }
 
 .scroll-pane {
     -fx-background-color: transparent;
-    -fx-background-radius: 0;
     -fx-border-color: transparent;
 }
 
-.scroll-pane .viewport {
+.scroll-pane > .viewport {
     -fx-background-color: transparent;
 }
 
-.scroll-pane .corner {
+.drink-grid {
     -fx-background-color: transparent;
 }
 
-/* Custom scrollbar styling for better appearance */
-.scroll-pane .scroll-bar:vertical {
-    -fx-background-color: rgba(0,0,0,0.05);
-    -fx-background-radius: 8;
-    -fx-pref-width: 12;
-    -fx-opacity: 0.7;
-}
-
-.scroll-pane .scroll-bar:vertical .track {
-    -fx-background-color: rgba(211,211,211,0.3);
-    -fx-background-radius: 8;
-    -fx-border-color: transparent;
-}
-
-.scroll-pane .scroll-bar:vertical .thumb {
-    -fx-background-color: #888888;
-    -fx-background-radius: 8;
-    -fx-border-color: transparent;
-}
-
-.scroll-pane .scroll-bar:vertical .thumb:hover {
-    -fx-background-color: #666666;
-    -fx-opacity: 0.9;
-}
-
-.scroll-pane .scroll-bar:vertical .thumb:pressed {
-    -fx-background-color: #444444;
-}
-
-.scroll-pane .scroll-bar:horizontal {
-    -fx-pref-height: 0;
-    -fx-max-height: 0;
-    -fx-min-height: 0;
-    -fx-opacity: 0;
-}
-
-.drinks-grid {
-    -fx-background-color: transparent;
-    -fx-alignment: TOP_CENTER;
-    -fx-padding: 20;
-}
-
-.scroll-pane .content {
-    -fx-smooth: true;
+.drink-item {
+    -fx-background-color: white;
+    -fx-background-radius: 20;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 5);
 }

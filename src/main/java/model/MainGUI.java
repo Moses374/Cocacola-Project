@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.io.File;
 
 /**
  * MainGUI serves as the central navigation hub for the application
@@ -149,29 +150,18 @@ public class MainGUI extends JFrame {
      */
     private void openOrderingInterface() {
         try {
-            // Get the current working directory
-            String currentDir = System.getProperty("user.dir");
-            
-            // Create a batch file to run the JavaFX app using Maven
-            String batchFilePath = System.getProperty("java.io.tmpdir") + "launch_javafx_app.bat";
-            try (java.io.FileWriter writer = new java.io.FileWriter(batchFilePath)) {
-                writer.write("@echo off\n");
-                writer.write("cd \"" + currentDir + "\"\n");
-                writer.write("mvn clean javafx:run\n");
-                writer.write("pause\n"); // Add pause to see any errors
-            }
-            
-            System.out.println("Created batch file at: " + batchFilePath);
-            
-            // Execute the batch file
-            ProcessBuilder pb = new ProcessBuilder("cmd.exe", "/c", "start", batchFilePath);
-            pb.start();
-            
+            String javaHome = System.getProperty("java.home");
+            String javaBin = javaHome + File.separator + "bin" + File.separator + "java";
+            String classpath = "target/classes;mysql-connector-j-9.3.0.jar";
+            String className = "model.MainLauncher";
+            ProcessBuilder builder = new ProcessBuilder(
+                javaBin, "-cp", classpath, className
+            );
+            builder.start();
             JOptionPane.showMessageDialog(this,
-                "Launching ordering interface with Maven...\nIf it doesn't appear, check the batch file at:\n" + batchFilePath,
+                "Launching ordering interface...",
                 "Launching Application", JOptionPane.INFORMATION_MESSAGE);
-            
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, 
                 "Error opening ordering interface: " + ex.getMessage(),
@@ -338,8 +328,15 @@ public class MainGUI extends JFrame {
     private void logout() {
         dispose();
         SwingUtilities.invokeLater(() -> {
-            MainLauncher launcher = new MainLauncher();
-            launcher.setVisible(true);
+            // Launch the JavaFX application again
+            try {
+                MainLauncher.main(new String[]{});
+            } catch (Exception e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(null, 
+                    "Error restarting application: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            }
         });
     }
     
